@@ -1,0 +1,14 @@
+{
+  "name": "websession",
+  "version": "0.1.0",
+  "description": "Decentralized consultation marketplace — escrow, reputation, and session lifecycle on-chain",
+  "private": true,
+  "scripts": {
+    "copy-abis": "node copy-abis.js",
+    "test:contracts": "cd contracts && npx hardhat test",
+    "lint": "cd frontend && npm run lint"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
