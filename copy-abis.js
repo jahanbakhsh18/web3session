@@ -1,18 +1,22 @@
 #!/usr/bin/env node
 /**
- * copy-abis.js
+ * Copies compiled contract ABIs from Hardhat artifacts into both the frontend and backend. 
+ * Run this after any contract change: npm run copy-abis   (from repo root)
  *
- * Copies compiled contract ABIs from Hardhat artifacts into the frontend.
- * Run this after any contract change: `npm run copy-abis` from repo root.
- *
- * Output: frontend/src/abis/<ContractName>.json  (ABI array only, not full artifact)
+ * Output:
+ *   frontend/src/abis/<ContractName>.json  (ABI array only, not full artifact)
+ *   backend/src/abis/<ContractName>.json   (same — backend indexer needs it too)
  */
 
 const fs   = require('fs')
 const path = require('path')
 
 const ARTIFACTS_DIR = path.join(__dirname, 'contracts/artifacts/contracts')
-const ABIS_OUT_DIR  = path.join(__dirname, 'frontend/src/abis')
+
+const OUT_DIRS = [
+  path.join(__dirname, 'frontend/src/abis'),
+  path.join(__dirname, 'backend/src/abis'),
+]
 
 const CONTRACTS = [
   'SessionRegistry',
@@ -21,7 +25,9 @@ const CONTRACTS = [
   'ReputationToken',
 ]
 
-fs.mkdirSync(ABIS_OUT_DIR, { recursive: true })
+for (const dir of OUT_DIRS) {
+  fs.mkdirSync(dir, { recursive: true })
+}
 
 let copied = 0
 let missing = 0
@@ -36,11 +42,14 @@ for (const name of CONTRACTS) {
   }
 
   const artifact = JSON.parse(fs.readFileSync(artifactPath, 'utf8'))
-  const outPath  = path.join(ABIS_OUT_DIR, `${name}.json`)
-
   // Write only the ABI array — not the full artifact (bytecode stays in contracts/)
-  fs.writeFileSync(outPath, JSON.stringify(artifact.abi, null, 2))
-  console.log(`  ✓  ${name} → frontend/src/abis/${name}.json`)
+  const abiJson = JSON.stringify(artifact.abi, null, 2)
+
+  for (const dir of OUT_DIRS) {
+    const outPath = path.join(dir, `${name}.json`)
+    fs.writeFileSync(outPath, abiJson)
+    console.log(`  ✓  ${name} → ${path.relative(__dirname, outPath)}`)
+  }
   copied++
 }
 

@@ -13,6 +13,9 @@ contracts/typechain-types/
 contracts/coverage/
 contracts/coverage.json
 
+backend/src/abis/
+frontend/src/abis/
+
 # OS
 .DS_Store
 Thumbs.db

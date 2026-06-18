@@ -6,7 +6,7 @@ import "./Reputation.sol";
 
 /**
  * @title SessionRegistry
- * @notice Core contract for websession. Manages the five-state consultation
+ * @notice Core contract for web3session. Manages the five-state consultation
  *         session lifecycle: Open → Escrowed → Active → Completed / Disputed.
  *         Delegates fund custody to Escrow.sol and reputation writes to Reputation.sol.
  *

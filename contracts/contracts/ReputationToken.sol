@@ -34,7 +34,7 @@ contract ReputationToken is ERC20 {
     error TransfersDisabled();
 
     // *** Constructor ***
-    constructor(address registry_) ERC20("websession Reputation", "W3CR") {
+    constructor(address registry_) ERC20("web3session Reputation", "W3CR") {
         registry = registry_;
     }
 

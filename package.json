@@ -1,5 +1,5 @@
 {
-  "name": "websession",
+  "name": "web3session",
   "version": "0.1.0",
   "description": "Decentralized consultation marketplace — escrow, reputation, and session lifecycle on-chain",
   "private": true,
