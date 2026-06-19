@@ -7,7 +7,7 @@ const { ethers } = require('ethers');
 
 console.log("RPC Endpoint (Connection):", process.env.INFURA_URL);
 
-const address = ethers.getAddress(process.env.DEPLOYER_ADDRESS);
+const address = ethers.getAddress(process.env.PARTY_ADDRESS);
 console.log("Wallet Address:", address);
 
 const p = new ethers.JsonRpcProvider(process.env.INFURA_URL);

@@ -9,7 +9,6 @@ if (contractName == "") {
   console.error(`
 Missing CONTRACT_NAME environment variable.
   Usage: 
-   $ npx hardhat run scripts/samples/estimateCost.ts --network sepolia
    $ CONTRACT_NAME=<NAME> CONSTRUCTOR_ARGS=<ARGS> npx hardhat run scripts/samples/estimateCost.ts --network sepolia
 `);
   process.exit(1);

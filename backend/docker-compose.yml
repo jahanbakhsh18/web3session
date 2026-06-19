@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: web3session-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: web3session
+      POSTGRES_PASSWORD: web3session_dev
+      POSTGRES_DB: web3session
+    ports:
+      - "5432:5432"
+    volumes:
+      - web3session_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U web3session"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  web3session_pgdata:
