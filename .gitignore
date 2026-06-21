@@ -1,6 +1,3 @@
-# Dependencies
-node_modules/
-
 # Environment — never commit real secrets
 .env
 .env.local
@@ -12,9 +9,13 @@ contracts/cache/
 contracts/typechain-types/
 contracts/coverage/
 contracts/coverage.json
+contracts/node_modules/
 
 backend/src/abis/
+backend/node_modules/
+
 frontend/src/abis/
+frontend/node_modules/
 
 # OS
 .DS_Store

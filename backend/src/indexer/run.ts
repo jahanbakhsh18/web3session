@@ -92,8 +92,6 @@ async function pollOnce(): Promise<void> {
   const fromBlock = (await getLastProcessedBlock(0)) + 1
   const toBlock = await provider.getBlockNumber()
 
-  //console.log(`>>> ${fromBlock} → ${toBlock}`);
-
   if (fromBlock > toBlock) return // nothing new since last poll
 
   // Chunked the same way as backfill — some free RPC providers reject or truncate eth_getLogs over wide ranges, 
@@ -102,6 +100,8 @@ async function pollOnce(): Promise<void> {
     const end = Math.min(start + CHUNK_SIZE - 1, toBlock)
 
     const events = await sessionRegistry.queryFilter('*', start, end)
+    console.log(`[indexer]   blocks ${start}-${end}: ${events.length} event(s)`)
+
     for (const event of events) {
       if ('args' in event) {
         await processEvent(event as ethers.EventLog)

@@ -1,5 +1,7 @@
 /**
- *  $ npx hardhat run scripts/samples/viewSessions.ts --network sepolia
+ * The party address for which you want to view sessions, as either caller or callee.
+ * Usage:
+ *    $ PARTY_ADDRESS=<0x...> npx hardhat run scripts/samples/viewSessions.ts --network sepolia
  */
 
 import { ethers } from 'hardhat'

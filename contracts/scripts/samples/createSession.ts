@@ -3,9 +3,8 @@
  * Run from contracts/: 
  *  $ npx hardhat run scripts/samples/createSession.ts --network sepolia
  *
- * Uses your test CALLER_KEY or deployer PRIVATE_KEY for the caller. 
- * For the callee use CALLEE_ADDRESS or the hardcoded test address below.
- *  -> Set CALLEE_ADDRESS if you want to test confirm() and complete() too.
+ * Uses your test CALLER_KEY or deployer PRIVATE_KEY for the caller. For the callee use CALLEE_ADDRESS 
+ * or the hardcoded test address below. Set CALLEE_ADDRESS if you want to test confirm() and complete() too.
  */
 
 import { ethers } from 'hardhat'
@@ -40,7 +39,7 @@ async function main() {
   const receipt = await tx.wait()
   console.log(`✓ Confirmed in block ${receipt?.blockNumber}`)
   console.log(`  https://sepolia.etherscan.io/tx/${tx.hash}`)
-  console.log('\nYour backend indexer should pick this up on its next poll (within ~8s).')
+  console.log('\nYour backend indexer should pick this up on its next poll.')
 }
 
 main().catch(err => {

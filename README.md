@@ -2,9 +2,6 @@
 
 A decentralized consultation marketplace. Smart contracts handle session agreements, escrow, and on-chain reputation.
 
-> **Demo status:** contracts written, tested locally and live on Sepolia
-> **Testnet:** [Sepolia Etherscan →](https://sepolia.etherscan.io)
-
 ---
 
 ## What it does
@@ -50,7 +47,6 @@ All four contracts are verified — click any address above to read the source d
 ## Backend — event indexer and REST API
 
 The backend mirrors on-chain state into Postgres so the frontend never has to re-scan the chain on every page load. The chain remains the source of truth; this is a read-optimized cache.
-**Why polling instead of event subscriptions?** Free-tier RPC providers (Infura, Alchemy free plans, public endpoints like 1RPC) commonly disable `eth_newFilter`, which `ethers.js` needs for live subscriptions. The indexer instead polls with `eth_getLogs` on a timer (`INDEXER_POLL_INTERVAL_MS`, default 8s), chunked to a configurable block range (`INDEXER_CHUNK_SIZE`) to stay within whatever range limit your RPC provider enforces. On failure, it retries with exponential backoff rather than spamming the same broken call.
 
 ---
 
@@ -82,6 +78,11 @@ curl http://localhost:4000/health
 curl http://localhost:4000/api/sessions/0xYOUR_ADDRESS
 curl http://localhost:4000/api/reputation/0xYOUR_ADDRESS
 
+# 4. Frontend
+cd ../frontend
+cp .env.example .env          # fill deployed contract addresses (SESSION_REGISTRY_ADDRESS, ...)
+npm install
+npm run dev                   # http://localhost:5173
 ```
 
 After any contract change, re-sync ABIs to the frontend and backend:
@@ -98,7 +99,8 @@ npm run copy-abis             # from repo root
 - [x] Full Hardhat test suite
 - [x] Deploy and verify on Sepolia
 - [x] Backend event indexer + REST API
-- [ ] Frontend wallet connect, booking flow, dashboard
+- [x] Frontend wallet connect, session lifecycle page
+- [ ] Frontend on-chain rating, dashboard
 
 ---
 
