@@ -37,6 +37,8 @@ function describeError(err: unknown): string {
   if (message.includes('ConfirmTimeoutExpired')) { return 'The confirmation window has expired — this session can no longer be confirmed.' }
   if (message.includes('NotParty')) { return 'Only the caller or callee of this session can perform this action.' }
   if (message.includes('WrongStatus')) { return 'This action is not available in the session\'s current state.' }
+  if (message.includes('InvalidRating')) { return 'Rating must be between 1 and 5 stars.' }
+  if (message.includes('AlreadyRated')) { return "You've already rated this session." }
 
   console.error('[useSession] unhandled error:', err)
   return 'Transaction failed. See console for details.'
@@ -48,6 +50,7 @@ export function useSession(signer: ethers.JsonRpcSigner | null) {
   const [completeState, setCompleteState] = useState<TxState>(IDLE)
   const [disputeState, setDisputeState] = useState<TxState>(IDLE)
   const [refundState, setRefundState] = useState<TxState>(IDLE)
+  const [rateState, setRateState] = useState<TxState>(IDLE)
 
   const getContract = useCallback(() => {
     if (!signer) throw new Error('Wallet not connected')
@@ -170,11 +173,33 @@ export function useSession(signer: ethers.JsonRpcSigner | null) {
     }
   }, [getContract])
 
+  const rateCounterparty = useCallback(async (sessionId: string, score: number): Promise<string | null> => {
+    setRateState({ status: 'pending', txHash: null, error: null })
+
+    try {
+      if (score < 1 || score > 5) {
+        setRateState({ status: 'error', txHash: null, error: 'Rating must be between 1 and 5 stars.' })
+        return null
+      }
+
+      const contract = getContract()
+      const tx = await contract.rateCounterparty(sessionId, score)
+      setRateState({ status: 'confirming', txHash: tx.hash, error: null })
+      await tx.wait()
+      setRateState({ status: 'success', txHash: tx.hash, error: null })
+      return tx.hash
+    } catch (err) {
+      setRateState({ status: 'error', txHash: null, error: describeError(err) })
+      return null
+    }
+  }, [getContract])
+
   return {
     createSession, createState,
     confirmSession, confirmState,
     completeSession, completeState,
     disputeSession, disputeState,
     claimRefund, refundState,
+    rateCounterparty, rateState,
   }
 }

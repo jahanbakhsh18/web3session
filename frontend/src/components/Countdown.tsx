@@ -28,8 +28,8 @@ export function Countdown({ targetUnixSecs, expiredLabel }: Props) {
   const remaining = targetUnixSecs - now
 
   if (remaining <= 0) {
-    return <span style={{ color: '#b91c1c' }}>{expiredLabel}</span>
+    return <span className="note-error">{expiredLabel}</span>
   }
 
-  return <span style={{ fontFamily: 'monospace' }}>{formatDuration(remaining)}</span>
+  return <span className="mono">{formatDuration(remaining)}</span>
 }

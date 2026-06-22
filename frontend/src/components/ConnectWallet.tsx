@@ -1,7 +1,7 @@
 import type { useWallet } from '../hooks/useWallet'
 
 function shortenAddress(address: string): string {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`
+  return `${address.slice(0, 6)}…${address.slice(-4)}`
 }
 
 type Props = {
@@ -13,32 +13,33 @@ export function ConnectWallet({ wallet }: Props) {
 
   if (address && isCorrectNetwork) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        <span style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}>
+      <div className="row row-gap-md">
+        <span className="mono wallet-address-badge">
+          <span className="wallet-dot" />
           {shortenAddress(address)}
         </span>
-        <button onClick={disconnect}>Disconnect</button>
+        <button onClick={disconnect} className="secondary">Disconnect</button>
       </div>
     )
   }
 
   if (address && !isCorrectNetwork) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        <span style={{ color: '#b45309' }}>Wrong network</span>
+      <div className="row row-gap-md">
+        <span className="eyebrow note-pending">Wrong network</span>
         <button onClick={switchToSepolia}>Switch to Sepolia</button>
       </div>
     )
   }
 
   return (
-    <div>
+    <div className="text-right">
       <button onClick={connect} disabled={isConnecting}>
-        {isConnecting ? 'Connecting...' : 'Connect wallet'}
+        {isConnecting ? 'Connecting…' : 'Connect wallet'}
       </button>
 
       {error && (
-        <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#b91c1c' }}>
+        <div className="wallet-error">
           {error.code === 'NO_PROVIDER' ? (
             <span>
               No wallet found.{' '}

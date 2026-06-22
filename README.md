@@ -80,7 +80,7 @@ curl http://localhost:4000/api/reputation/0xYOUR_ADDRESS
 
 # 4. Frontend
 cd ../frontend
-cp .env.example .env          # fill deployed contract addresses (SESSION_REGISTRY_ADDRESS, ...)
+cp .env.example .env          # fill deployed contract addresses
 npm install
 npm run dev                   # http://localhost:5173
 ```
@@ -100,7 +100,7 @@ npm run copy-abis             # from repo root
 - [x] Deploy and verify on Sepolia
 - [x] Backend event indexer + REST API
 - [x] Frontend wallet connect, session lifecycle page
-- [ ] Frontend on-chain rating, dashboard
+- [x] Frontend on-chain rating, dashboard
 
 ---
 
