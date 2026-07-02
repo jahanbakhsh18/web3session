@@ -21,7 +21,13 @@ function isSameAddress(a: string | null, b: string | null): boolean {
 }
 
 function shorten(address: string): string {
-  return `${address.slice(0, 8)}…${address.slice(-6)}`
+  return `${address.slice(0, 7)}…${address.slice(-5)}`
+}
+
+/** Format a Date for a datetime-local input's value attribute (local time, no seconds). */
+function toDatetimeLocalValue(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
 export function SessionPage({ sessionId, signer, provider, connectedAddress }: Props) {
@@ -34,6 +40,7 @@ export function SessionPage({ sessionId, signer, provider, connectedAddress }: P
     rateCounterparty, rateState,
   } = useSession(signer)
   const [pendingScore, setPendingScore] = useState(0)
+  const [scheduledStartInput, setScheduledStartInput] = useState(() => toDatetimeLocalValue(new Date()))
 
   if (loading && !data) {
     return <p className="note note-muted">Loading session #{sessionId}…</p>
@@ -51,11 +58,20 @@ export function SessionPage({ sessionId, signer, provider, connectedAddress }: P
   const isCallee = isSameAddress(connectedAddress, data.callee)
   const isParty = isCaller || isCallee
 
+  const nowSecs = Math.floor(Date.now() / 1000)
+  const completableAt = data.scheduledStart + data.durationSecs
+  const calleeCanComplete = nowSecs >= completableAt
+
   async function handleAction(action: () => Promise<string | null>) {
     const txHash = await action()
     if (txHash) {
       setTimeout(refetch, 1500)
     }
+  }
+
+  function handleConfirm() {
+    const scheduledStart = Math.floor(new Date(scheduledStartInput).getTime() / 1000)
+    handleAction(() => confirmSession(sessionId, scheduledStart))
   }
 
   return (
@@ -80,6 +96,12 @@ export function SessionPage({ sessionId, signer, provider, connectedAddress }: P
           <dd className="mono">{ethers.formatEther(data.deposit)} ETH</dd>
           <dt className="note-muted">Duration</dt>
           <dd className="mono">{Math.round(data.durationSecs / 60)} min</dd>
+          {data.status !== 'Escrowed' && data.scheduledStart > 0 && (
+            <>
+              <dt className="note-muted">Scheduled start</dt>
+              <dd className="mono">{new Date(data.scheduledStart * 1000).toLocaleString()}</dd>
+            </>
+          )}
         </dl>
 
         {!isParty && (
@@ -88,7 +110,7 @@ export function SessionPage({ sessionId, signer, provider, connectedAddress }: P
           </p>
         )}
 
-        {/* Escrowed: callee can confirm, caller can refund after timeout expires */}
+        {/* Escrowed: callee picks a start time and confirms; caller can refund after timeout. */}
         {data.status === 'Escrowed' && (
           <div className="stack-sm">
             <p className="note">
@@ -100,16 +122,32 @@ export function SessionPage({ sessionId, signer, provider, connectedAddress }: P
             </p>
 
             {isCallee && (
-              <button
-                onClick={() => handleAction(() => confirmSession(sessionId))}
-                disabled={confirmState.status === 'pending' || confirmState.status === 'confirming'}
-                className="self-start"
-              >
-                {confirmState.status === 'confirming' ? 'Confirming…' : 'Confirm session'}
-              </button>
+              <div className="stack-xs">
+                <label className="field-label">
+                  Scheduled start time
+                  <input
+                    type="datetime-local"
+                    value={scheduledStartInput}
+                    onChange={e => setScheduledStartInput(e.target.value)}
+                    max={toDatetimeLocalValue(new Date((data.createdAt + data.confirmTimeout) * 1000))}
+                  />
+                  <span>
+                    You won't be able to mark this session complete until {Math.round(data.durationSecs / 60)} minutes
+                    after this time. The caller can end the session early at any point.
+                  </span>
+                </label>
+
+                <button
+                  onClick={handleConfirm}
+                  disabled={confirmState.status === 'pending' || confirmState.status === 'confirming'}
+                  className="self-start"
+                >
+                  {confirmState.status === 'confirming' ? 'Confirming…' : 'Confirm session'}
+                </button>
+              </div>
             )}
 
-            {isCaller && data.createdAt + data.confirmTimeout < Math.floor(Date.now() / 1000) && (
+            {isCaller && data.createdAt + data.confirmTimeout < nowSecs && (
               <button
                 onClick={() => handleAction(() => claimRefund(sessionId))}
                 disabled={refundState.status === 'pending' || refundState.status === 'confirming'}
@@ -121,22 +159,40 @@ export function SessionPage({ sessionId, signer, provider, connectedAddress }: P
           </div>
         )}
 
-        {/* Active: either party can complete or dispute */}
+        {/* Active: caller can complete any time; callee is gated until the scheduled session duration has actually elapsed. */}
         {data.status === 'Active' && isParty && (
-          <div className="action-row">
-            <button
-              onClick={() => handleAction(() => completeSession(sessionId))}
-              disabled={completeState.status === 'pending' || completeState.status === 'confirming'}
-            >
-              {completeState.status === 'confirming' ? 'Completing…' : 'Mark complete'}
-            </button>
-            <button
-              onClick={() => handleAction(() => disputeSession(sessionId))}
-              disabled={disputeState.status === 'pending' || disputeState.status === 'confirming'}
-              className="danger"
-            >
-              {disputeState.status === 'confirming' ? 'Disputing…' : 'Raise dispute'}
-            </button>
+          <div className="stack-sm">
+            {isCallee && !calleeCanComplete && (
+              <p className="note">
+                You can mark this session as complete in {' '}
+                <Countdown targetUnixSecs={completableAt} expiredLabel="now" />
+              </p>
+            )}
+
+            <div className="action-row">
+              {(isCaller || calleeCanComplete) && (
+                <button
+                  onClick={() => handleAction(() => completeSession(sessionId))}
+                  disabled={completeState.status === 'pending' || completeState.status === 'confirming'}
+                >
+                  {completeState.status === 'confirming' ? 'Completing…' : 'Mark complete'}
+                </button>
+              )}
+              <button
+                onClick={() => handleAction(() => disputeSession(sessionId))}
+                disabled={disputeState.status === 'pending' || disputeState.status === 'confirming'}
+                className="danger"
+              >
+                {disputeState.status === 'confirming' ? 'Disputing…' : 'Raise dispute'}
+              </button>
+            </div>
+
+            {isCaller && (
+              <p className="note note-muted">
+                Ending early forfeits the remaining scheduled time.
+              </p>
+              
+            )}
           </div>
         )}
 

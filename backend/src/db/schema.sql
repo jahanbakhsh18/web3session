@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS sessions (
                          CHECK (status IN ('Escrowed','Active','Completed','Disputed','Refunded')),
     created_at_chain   TIMESTAMPTZ NOT NULL,  -- block.timestamp of SessionCreated
     confirmed_at_chain TIMESTAMPTZ,
+    scheduled_start_at TIMESTAMPTZ,
     completed_at_chain TIMESTAMPTZ,
     created_tx_hash    TEXT NOT NULL,
     last_event_tx_hash TEXT,

@@ -19,11 +19,11 @@ async function main() {
   console.log(`Deployer: ${deployer.address}`)
   console.log(`Balance:  ${ethers.formatEther(await ethers.provider.getBalance(deployer.address))} ETH\n`)
 
-  // *** Step 1: Pre-compute registry address ****
-  // Escrow and Reputation need the registry address in their constructors, but registry needs them first. 
-  // We solve this by computing the address. The registry will occupy (deployer nonce + 2 = after Escrow + Reputation).
+  // *** Step 1: Pre-compute registry address ***
+  // Escrow, Reputation, and ParticipationToken need the registry address in their constructors, but registry needs them first. 
+  // We solve this by computing the address. The registry will occupy (deployer nonce + 3 = after Escrow + Reputation + ParticipationToken).
   const nonce = await ethers.provider.getTransactionCount(deployer.address)
-  const registryAddress = ethers.getCreateAddress({ from: deployer.address, nonce: nonce + 2 })
+  const registryAddress = ethers.getCreateAddress({ from: deployer.address, nonce: nonce + 3 })
   console.log(`Pre-computed registry address: ${registryAddress}`)
 
   // *** Step 2: Deploy Escrow ***
@@ -42,14 +42,23 @@ async function main() {
   const reputationAddress = await reputation.getAddress()
   console.log(`  Reputation: ${reputationAddress}`)
 
-  // *** Step 4: Deploy SessionRegistry ***
+  // *** Step 4: Deploy ParticipationToken ***
+  console.log('Deploying ParticipationToken...')
+  const TokenFactory = await ethers.getContractFactory('ParticipationToken')
+  const token = await TokenFactory.deploy(registryAddress)
+  await token.waitForDeployment()
+  const tokenAddress = await token.getAddress()
+  console.log(`  ParticipationToken:  ${tokenAddress}`)
+
+  // *** Step 5: Deploy SessionRegistry ***
   console.log('Deploying SessionRegistry...')
   const RegistryFactory = await ethers.getContractFactory('SessionRegistry')
   const registry = await RegistryFactory.deploy(
     escrowAddress,
     reputationAddress,
+    tokenAddress,
     deployer.address, // arbitrator = deployer for demo
-  ) 
+  )
   await registry.waitForDeployment()
   const actualRegistryAddress = await registry.getAddress()
 
@@ -62,26 +71,18 @@ async function main() {
     )
   }
   console.log(`  Registry:   ${actualRegistryAddress}`)
-  
-  // *** Step 5: Deploy ReputationToken ***
-  console.log('Deploying ReputationToken...')
-  const TokenFactory = await ethers.getContractFactory('ReputationToken')
-  const token = await TokenFactory.deploy(registryAddress)
-  await token.waitForDeployment()
-  const tokenAddress = await token.getAddress()
-  console.log(`  Token:      ${tokenAddress}`)
 
-  // *** Step 6: Save deployments ***
+  // *** Step 6: Save deployments *** 
   const deployments = {
     network: network.name,
     chainId: (await ethers.provider.getNetwork()).chainId.toString(),
     deployer: deployer.address,
     timestamp: new Date().toISOString(),
     contracts: {
-      Escrow:          escrowAddress,
-      Reputation:      reputationAddress,
-      SessionRegistry: actualRegistryAddress,
-      ReputationToken: tokenAddress,
+      Escrow:              escrowAddress,
+      Reputation:          reputationAddress,
+      ParticipationToken:  tokenAddress,
+      SessionRegistry:     actualRegistryAddress,
     },
   }
 
@@ -92,7 +93,7 @@ async function main() {
   console.log('\n─── Complete ──────────────────────────────────────────')
   console.log('Next steps:')
   console.log('  1. npm run copy-abis          (from repo root)')
-  console.log('  2. Update frontend/.env with contract addresses')
+  console.log('  2. Update frontend/.env and backend/.env with contract addresses')
   if (network.name === 'sepolia') {
     console.log('  3. npx hardhat run scripts/verify.ts --network sepolia')
   }

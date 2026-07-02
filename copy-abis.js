@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Copies compiled contract ABIs from Hardhat artifacts into both the frontend and backend. 
+ * Copies compiled contract ABIs from Hardhat artifacts into both the frontend and backend.
  * Run this after any contract change: npm run copy-abis   (from repo root)
  *
  * Output:
@@ -22,7 +22,7 @@ const CONTRACTS = [
   'SessionRegistry',
   'Escrow',
   'Reputation',
-  'ReputationToken',
+  'ParticipationToken',
 ]
 
 for (const dir of OUT_DIRS) {

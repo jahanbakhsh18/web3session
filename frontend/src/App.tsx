@@ -24,77 +24,79 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <div>
-          <h1 className="app-title">web3session</h1>
-          <div className="eyebrow app-tagline">
-            On-chain consultation escrow — Sepolia testnet
+      <div className="app-shell-inner">
+        <header className="app-header">
+          <div>
+            <h1 className="app-title">web3session</h1>
+            <div className="eyebrow app-tagline">
+              On-chain consultation escrow — Sepolia testnet
+            </div>
           </div>
-        </div>
-        <ConnectWallet wallet={wallet} />
-      </header>
+          <ConnectWallet wallet={wallet} />
+        </header>
 
-      {wallet.address && wallet.isCorrectNetwork ? (
-        <>
-          <div className="dashboard-toolbar">
-            <div className="eyebrow">Dashboard</div>
-            <button onClick={() => setOverlay({ type: 'book' })}>
-              Book a session
-            </button>
-          </div>
+        {wallet.address && wallet.isCorrectNetwork ? (
+          <>
+            <div className="dashboard-toolbar">
+              <div className="app-page-title">Dashboard</div>
+              <button onClick={() => setOverlay({ type: 'book' })}>
+                Book a session
+              </button>
+            </div>
 
-          <Dashboard address={wallet.address} onOpenSession={openSession} />
+            <Dashboard address={wallet.address} provider={wallet.provider} onOpenSession={openSession} />
 
-          <div className="section-divider">
-            <label className="eyebrow" htmlFor="session-id-input">
-              Open a session by ID
-            </label>
-            <form
-              className="row row-gap-sm"
-              onSubmit={e => {
-                e.preventDefault()
-                if (sessionIdInput.trim()) openSession(sessionIdInput.trim())
-              }}
-            >
-              <input
-                id="session-id-input"
-                type="text"
-                placeholder="Session ID, e.g. 0"
-                value={sessionIdInput}
-                onChange={e => setSessionIdInput(e.target.value)}
-                className="flex-1"
-              />
-              <button type="submit" className="secondary">View</button>
-            </form>
-          </div>
-        </>
-      ) : (
-        <p className="intro-copy">
-          Connect your wallet on Sepolia to book a consultation session.
-          Funds are held in an on-chain escrow contract and released only
-          when both the lifecycle and the timing allow it.
-        </p>
-      )}
+            <div className="section-divider">
+              <label className="eyebrow" htmlFor="session-id-input">
+                Open a session by ID
+              </label>
+              <form
+                className="row row-gap-sm"
+                onSubmit={e => {
+                  e.preventDefault()
+                  if (sessionIdInput.trim()) openSession(sessionIdInput.trim())
+                }}
+              >
+                <input
+                  id="session-id-input"
+                  type="text"
+                  placeholder="Session ID, e.g. 0"
+                  value={sessionIdInput}
+                  onChange={e => setSessionIdInput(e.target.value)}
+                  className="flex-1"
+                />
+                <button type="submit" className="secondary">View</button>
+              </form>
+            </div>
+          </>
+        ) : (
+          <p className="intro-copy">
+            Connect your wallet on Sepolia to book a consultation session.
+            Funds are held in an on-chain escrow contract and released only
+            when both the lifecycle and the timing allow it.
+          </p>
+        )}
 
-      {overlay?.type === 'book' && (
-        <Modal onClose={closeOverlay}>
-          <BookSession
-            signer={wallet.signer}
-            onCreated={sessionId => setOverlay({ type: 'session', sessionId })}
-          />
-        </Modal>
-      )}
+        {overlay?.type === 'book' && (
+          <Modal onClose={closeOverlay}>
+            <BookSession
+              signer={wallet.signer}
+              onCreated={sessionId => setOverlay({ type: 'session', sessionId })}
+            />
+          </Modal>
+        )}
 
-      {overlay?.type === 'session' && (
-        <Modal onClose={closeOverlay}>
-          <SessionPage
-            sessionId={overlay.sessionId}
-            signer={wallet.signer}
-            provider={wallet.provider}
-            connectedAddress={wallet.address}
-          />
-        </Modal>
-      )}
+        {overlay?.type === 'session' && (
+          <Modal onClose={closeOverlay}>
+            <SessionPage
+              sessionId={overlay.sessionId}
+              signer={wallet.signer}
+              provider={wallet.provider}
+              connectedAddress={wallet.address}
+            />
+          </Modal>
+        )}
+      </div>
     </div>
   )
 }

@@ -4,12 +4,11 @@ pragma solidity ^0.8.28;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /**
- * @title ReputationToken
+ * @title ParticipationToken
  * @notice ERC-20 token minted to both parties when a session completes cleanly.
- *         Not transferable in this demo — it's a proof-of-participation token,
- *         not a currency. Disable transfers to keep the incentive structure clean.
+ *         It's a proof-of-participation reward, not a currency, and not a measure of trust or quality.
  *
- *         In a production system you might:
+ *         Not transferable in this demo. In a production system you might:
  *           - Allow transfers after a vesting period
  *           - Use it for governance (vote on arbitrator slate)
  *           - Gate access to premium features by token balance
@@ -17,10 +16,9 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
  * @dev    Inherits standard ERC-20 from OpenZeppelin. Minting is gated to the registry address only.
  *         _update() override blocks transfers between non-zero addresses.
  */
-contract ReputationToken is ERC20 {
+contract ParticipationToken is ERC20 {
 
     // *** State ***
-
     address public immutable registry;
 
     /// @notice Tokens minted per completed session (per party).
@@ -34,12 +32,11 @@ contract ReputationToken is ERC20 {
     error TransfersDisabled();
 
     // *** Constructor ***
-    constructor(address registry_) ERC20("web3session Reputation", "W3CR") {
+    constructor(address registry_) ERC20("Web3session Participation", "W3SP") {
         registry = registry_;
     }
 
     // *** Registry-only interface ***
-
     /**
      * @notice Mint reward tokens to both parties of a completed session.
      * @param sessionId  The session ID (emitted for indexing).
@@ -56,7 +53,6 @@ contract ReputationToken is ERC20 {
     }
 
     // *** Transfer restriction ***
-
     /**
      * @dev Override ERC-20's internal _update hook (OZ v5 pattern).
      *      Block any transfer between two non-zero addresses.

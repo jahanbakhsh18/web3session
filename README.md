@@ -7,10 +7,10 @@ A decentralized consultation marketplace. Smart contracts handle session agreeme
 ## What it does
 
 1. **Alice** connects her wallet and books a 30-minute consultation slot with **Bob**, depositing ETH into escrow.
-2. **Bob** confirms availability on-chain — the session becomes `Active`.
-3. The session runs (shared scratchpad, or any external call tool of your choice).
-4. Either party calls `complete()` — escrow releases to Bob proportionally.
-5. Alice rates Bob — the score is stored permanently on-chain and compounds into Bob's reputation.
+2. **Bob** confirms availability on-chain and declares the time the session will start.
+3. The session becomes `Active` and runs (shared scratchpad, or any external call, service or session tool of your choice).
+4. Either party calls `completeSession()`. Escrow releases to Bob, and both parties earn a non-transferable participation token.
+5. Alice and Bob rate each other. The score is stored permanently on-chain and compounds into reputation.
 
 If Bob never confirms, Alice's ETH is refunded automatically after a configurable timeout. If there's a dispute, a lightweight arbitration path settles it without a third-party service.
 
@@ -20,33 +20,43 @@ If Bob never confirms, Alice's ETH is refunded automatically after a configurabl
 
 | Contract | Address |
 |---|---|
-| SessionRegistry | [`0x526A3D4e6BCCcCb4fE97E73053f7B4c36724f4eb`](https://sepolia.etherscan.io/address/0x526A3D4e6BCCcCb4fE97E73053f7B4c36724f4eb#code) |
-| Escrow | [`0x804167221A82e80C2b73Ed394a9540E1Fbab0004`](https://sepolia.etherscan.io/address/0x804167221A82e80C2b73Ed394a9540E1Fbab0004#code) |
-| Reputation | [`0x58eA41b0fCf4dec1f19AD386FDFdB56E9F29Ee6e`](https://sepolia.etherscan.io/address/0x58eA41b0fCf4dec1f19AD386FDFdB56E9F29Ee6e#code) |
-| ReputationToken | [`0x9f07800F7a2d0A2FfF1b314EEcfdec4a64fE858C`](https://sepolia.etherscan.io/address/0x9f07800F7a2d0A2FfF1b314EEcfdec4a64fE858C#code) |
+| SessionRegistry | [`0x446bbd951525F223024DfabB69EBA35346dfa166`](https://sepolia.etherscan.io/address/0x446bbd951525F223024DfabB69EBA35346dfa166#code) |
+| Escrow | [`0xe8c4B36026Ff5168DaDe4529f9efDD8bf49BdC29`](https://sepolia.etherscan.io/address/0xe8c4B36026Ff5168DaDe4529f9efDD8bf49BdC29#code) |
+| Reputation | [`0x04C05b90D619416198b6965E0491fe702d19c3AE`](https://sepolia.etherscan.io/address/0x04C05b90D619416198b6965E0491fe702d19c3AE#code) |
+| ParticipationToken | [`0xf4328E6b125Bcc9B339C73166E06A53A57A363B6`](https://sepolia.etherscan.io/address/0xf4328E6b125Bcc9B339C73166E06A53A57A363B6#code) |
 
-All four contracts are verified — click any address above to read the source directly on Etherscan.
+All four contracts are verified (click any address above to read the source directly on Etherscan).
 
 ---
 
 ## Contract state machine
 
-```
-[Open] --deposit()--> [Escrowed] --confirm()--> [Active]
-                           |                        |
-                        timeout                complete() / dispute()
-                           |                       /           \
-                      [Refunded]            [Completed]      [Disputed]
-                                             ETH→callee       arbitration
-```
+<p> <img src="docs/web3session.png" width="640" /> </p>
 
-`SessionRegistry.sol` owns the lifecycle. `Escrow.sol` is a standalone vault that only the registry can move funds through. `Reputation.sol` stores a cumulative `(total, count)` score per address so the average can be computed precisely off-chain. `ReputationToken.sol` is a non-transferable ERC-20 minted to both parties on a clean completion — a proof-of-participation reward, not a currency.
+`SessionRegistry.sol` owns the lifecycle. `Escrow.sol` is a standalone vault that only the registry can move funds through. `Reputation.sol` stores a cumulative `(total, count)` score per address so the average can be computed precisely off-chain. `ParticipationToken.sol` is a non-transferable ERC-20 minted to both parties on a clean completion (a proof-of-participation reward, not a currency).
 
----
+**Contracts** (`contracts/`): four Solidity contracts covering the full session lifecycle, an escrow vault, cumulative reputation scoring, and a non-transferable participation reward; a Hardhat test suite with 44 tests covering successful flow, timing gate, dispute resolution, and reward logic.
 
-## Backend — event indexer and REST API
+**Backend** (`backend/`): a Node.js/Express REST API backed by Postgres, a polling event indexer that mirrors on-chain session and rating events into the database, and a Socket.io signaling layer that pushes live updates to connected clients without polling.
 
-The backend mirrors on-chain state into Postgres so the frontend never has to re-scan the chain on every page load. The chain remains the source of truth; this is a read-optimized cache.
+**Frontend** (`frontend/`): a React/TypeScript app built with Vite; wallet connect with MetaMask, a dashboard with live push updates, a session certificate view with role-aware action buttons, and a custom CSS design system with no external UI framework.
+
+### Design considerations and screenshots
+
+<div align="center">
+  <div style="display: flex; justify-content: center; gap: 100px; flex-wrap: wrap;">
+    <div style="text-align: center;">
+      <h4><a href="./DESIGN.md">📐 Design Considerations</a></h4>
+      <p><em>Click to view design rationale</em></p>
+    </div>
+    <div style="text-align: center;">
+      <a href="https://jahanbakhsh18.github.io/web3session/docs/screenshots.html">
+        <img src="docs/screenshots/1_dashboard_and_terminals.png" width="200" alt="Application Demo">
+      </a>
+      <p><em><a href="https://jahanbakhsh18.github.io/web3session/docs/screenshots.html">📸 Application screenshots</a></em></p>
+    </div>
+  </div>
+</div>
 
 ---
 
@@ -93,14 +103,13 @@ npm run copy-abis             # from repo root
 
 ---
 
-## Roadmap
+## Tech stack
 
-- [x] SessionRegistry, Escrow, Reputation, ReputationToken contracts
-- [x] Full Hardhat test suite
-- [x] Deploy and verify on Sepolia
-- [x] Backend event indexer + REST API
-- [x] Frontend wallet connect, session lifecycle page
-- [x] Frontend on-chain rating, dashboard
+**Contracts**: Solidity 0.8.28, Hardhat, ethers.js v6, OpenZeppelin (ERC-20 base for `ParticipationToken`), `@nomicfoundation/hardhat-network-helpers` (for time manipulation in tests), Deployed and verified on Sepolia testnet.
+
+**Backend**: Node.js, Express, Socket.io (for real-time push notifications), PostgreSQL (as a read-optimized mirror of on-chain state), `dotenv` for configuration, The indexer is a polling-based event listener that runs in-process alongside the REST API.
+
+**Frontend**: React, TypeScript, Vite, ethers.js v6 (for all contract reads and writes), `socket.io-client` (for the live push layer).
 
 ---
 

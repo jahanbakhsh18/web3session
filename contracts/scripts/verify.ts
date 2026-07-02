@@ -22,12 +22,13 @@ async function main() {
 
   await verify('Escrow', contracts.Escrow, [contracts.SessionRegistry])
   await verify('Reputation', contracts.Reputation, [contracts.SessionRegistry])
+  await verify('ParticipationToken', contracts.ParticipationToken, [contracts.SessionRegistry])
   await verify('SessionRegistry', contracts.SessionRegistry, [
     contracts.Escrow,
     contracts.Reputation,
+    contracts.ParticipationToken,
     deployer,
   ])
-  await verify('ReputationToken', contracts.ReputationToken, [contracts.SessionRegistry])
 
   console.log('\n─── Done ──────────────────────────────────────────────\n')
 }

@@ -29,12 +29,15 @@ function describeError(err: unknown): string {
   const code = (err as { code?: number | string })?.code
   const message = (err as { message?: string })?.message ?? ''
 
-  if (code === 4001 || code === 'ACTION_REJECTED') { return 'Transaction was rejected in your wallet.' }
+if (code === 4001 || code === 'ACTION_REJECTED') { return 'Transaction was rejected in your wallet.' }
   if (message.includes('insufficient funds')) { return 'Insufficient ETH in your wallet to cover the deposit and gas.' }
   if (message.includes('SelfSession')) { return "You can't book a session with your own address." }
   if (message.includes('ZeroDeposit')) { return 'Deposit amount must be greater than zero.' }
   if (message.includes('ConfirmTimeoutNotExpired')) { return 'The confirmation window has not expired yet — refund is not available.' }
   if (message.includes('ConfirmTimeoutExpired')) { return 'The confirmation window has expired — this session can no longer be confirmed.' }
+  if (message.includes('ScheduledStartInPast')) { return 'Scheduled start must be now or later, and within the confirmation window.' }
+  if (message.includes('ScheduledStartAfterConfirmTimeout')) { return 'Scheduled start must be before the confirmation window.' }
+  if (message.includes('SessionNotYetElapsed')) { return "The scheduled session hasn't finished yet — you can mark it complete once the duration has elapsed."  }
   if (message.includes('NotParty')) { return 'Only the caller or callee of this session can perform this action.' }
   if (message.includes('WrongStatus')) { return 'This action is not available in the session\'s current state.' }
   if (message.includes('InvalidRating')) { return 'Rating must be between 1 and 5 stars.' }
@@ -109,12 +112,17 @@ export function useSession(signer: ethers.JsonRpcSigner | null) {
     }
   }, [getContract])
 
-  const confirmSession = useCallback(async (sessionId: string): Promise<string | null> => {
+  /**
+   * @param sessionId         The session to confirm.
+   * @param scheduledStart    Unix seconds the callee commits to starting at.
+   *                          Must be >= now and <= the session's original confirm-timeout deadline.
+   */
+  const confirmSession = useCallback(async (sessionId: string, scheduledStart: number): Promise<string | null> => {
     setConfirmState({ status: 'pending', txHash: null, error: null })
 
     try {
       const contract = getContract()
-      const tx = await contract.confirmSession(sessionId)
+      const tx = await contract.confirmSession(sessionId, scheduledStart)
       setConfirmState({ status: 'confirming', txHash: tx.hash, error: null })
       await tx.wait()
       setConfirmState({ status: 'success', txHash: tx.hash, error: null })

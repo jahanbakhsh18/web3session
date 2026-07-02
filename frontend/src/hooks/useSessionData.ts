@@ -33,6 +33,8 @@ export type SessionData = {
   createdAt: number          // unix seconds
   confirmedAt: number        // 0 if not yet confirmed
   confirmTimeout: number     // seconds
+  /** Callee-declared start time, set at confirmSession(). 0 until confirmed. */
+  scheduledStart: number
   status: SessionStatusLabel
   callerRating: number
   calleeRating: number
@@ -76,6 +78,7 @@ export function useSessionData(
         createdAt: Number(raw.createdAt),
         confirmedAt: Number(raw.confirmedAt),
         confirmTimeout: Number(raw.confirmTimeout),
+        scheduledStart: Number(raw.scheduledStart),
         status: SessionStatus[statusIndex],
         callerRating: Number(raw.callerRating),
         calleeRating: Number(raw.calleeRating),

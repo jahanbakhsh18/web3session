@@ -31,5 +31,5 @@ export function Countdown({ targetUnixSecs, expiredLabel }: Props) {
     return <span className="note-error">{expiredLabel}</span>
   }
 
-  return <span className="mono">{formatDuration(remaining)}</span>
+  return <span className="mono seal">{formatDuration(remaining)}</span>
 }

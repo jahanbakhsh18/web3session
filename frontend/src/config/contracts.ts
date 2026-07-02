@@ -22,7 +22,7 @@ export const CONTRACT_ADDRESSES = {
   SessionRegistry: requireEnv('VITE_SESSION_REGISTRY_ADDRESS'),
   Escrow: requireEnv('VITE_ESCROW_ADDRESS'),
   Reputation: requireEnv('VITE_REPUTATION_ADDRESS'),
-  ReputationToken: requireEnv('VITE_REPUTATION_TOKEN_ADDRESS'),
+  ParticipationToken: requireEnv('VITE_PARTICIPATION_TOKEN_ADDRESS'),
 } as const
 
 // Sepolia network params, used when prompting MetaMask to add/switch the network.

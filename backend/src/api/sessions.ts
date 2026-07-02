@@ -19,7 +19,7 @@ sessionsRouter.get('/sessions/:address', async (req, res) => {
     const result = await pool.query(
       `SELECT
          session_id, caller_address, callee_address, deposit_wei,
-         duration_secs, confirm_timeout, status,
+         duration_secs, confirm_timeout, scheduled_start_at, status,
          created_at_chain, confirmed_at_chain, completed_at_chain,
          created_tx_hash, last_event_tx_hash
        FROM sessions

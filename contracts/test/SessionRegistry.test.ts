@@ -6,52 +6,55 @@ import type {
   SessionRegistry,
   Escrow,
   Reputation,
-  ReputationToken,
+  ParticipationToken,
 } from '../typechain-types'
 
-// *** Helpers ***
-
 const ONE_ETH = ethers.parseEther('1')
+const REWARD_AMOUNT = ethers.parseEther('10')
+const SLACK_SECS = 5                  // seconds
 const ONE_DAY = 60 * 60 * 24          // seconds
 const THIRTY_MIN = 60 * 30            // seconds
 
 /**
- * Deploy the full contract suite.
- * Deployment order matters: Escrow and Reputation need the registry address, but registry needs Escrow + Reputation addresses.
- * Solution: deploy Escrow/Reputation with a placeholder, then deploy Registry, then update the registry reference. 
- * For the demo we solve this by deploying registry first with a known address scheme, or by using a factory. 
- * Here we use the simpler two-step approach: deploy with deployer as registry placeholder, then re-deploy properly. 
- * Actually the cleanest approach for tests is a deploy-all fixture that wires everything up.
+ * Deploy the full contract suite, matching deploy.ts's order and wiring: Escrow, Reputation, and ParticipationToken are deployed 
+ * first (each pointing at the registry's pre-computed future address), then SessionRegistry is deployed referencing all three.
  */
 async function deployAll(deployer: SignerWithAddress, arbitrator: SignerWithAddress) {
-  // 1. Pre-compute registry address (it's the next contract deployer creates)
   const nonce = await ethers.provider.getTransactionCount(deployer.address)
-  // registry will be deployed at nonce+2 (after Escrow at nonce, Reputation at nonce+1)
-  const registryAddress = ethers.getCreateAddress({ from: deployer.address, nonce: nonce + 2 })
+  // registry will be deployed at nonce+3 (after Escrow, Reputation, ParticipationToken)
+  const registryAddress = ethers.getCreateAddress({ from: deployer.address, nonce: nonce + 3 })
 
-  // 2. Deploy Escrow + Reputation pointing at the future registry
   const EscrowFactory     = await ethers.getContractFactory('Escrow', deployer)
   const ReputationFactory = await ethers.getContractFactory('Reputation', deployer)
-  const TokenFactory      = await ethers.getContractFactory('ReputationToken', deployer)
+  const TokenFactory      = await ethers.getContractFactory('ParticipationToken', deployer)
 
   const escrow     = await EscrowFactory.deploy(registryAddress)
   const reputation = await ReputationFactory.deploy(registryAddress)
+  const token       = await TokenFactory.deploy(registryAddress)
 
-  // 3. Deploy SessionRegistry
   const RegistryFactory = await ethers.getContractFactory('SessionRegistry', deployer)
   const registry = await RegistryFactory.deploy(
     await escrow.getAddress(),
     await reputation.getAddress(),
+    await token.getAddress(),
     arbitrator.address,
   )
 
   // Sanity-check: the pre-computed address matches the actual deployment
   expect(await registry.getAddress()).to.equal(registryAddress)
 
-  // 4. Deploy ReputationToken (optional, tested separately)
-  const token = await TokenFactory.deploy(registryAddress)
-
   return { registry, escrow, reputation, token }
+}
+
+/** 
+ * Helper: confirm with a start time at "now" which is the common case in most tests 
+ * where we don't care about the scheduling gate itself.
+ *
+ *  Why not just pass time.latest()? Calling confirmSession() itself mines a new block, and Hardhat advances 
+ *  block.timestamp by at least 1 second for every new block relative to the last one.
+ */
+async function confirmNow(registry: SessionRegistry, callee: SignerWithAddress, sessionId: bigint) {
+  return registry.connect(callee).confirmSession(sessionId, (await time.latest()) + SLACK_SECS)
 }
 
 // *** Tests ***
@@ -66,16 +69,15 @@ describe('SessionRegistry', () => {
   let registry:   SessionRegistry
   let escrow:     Escrow
   let reputation: Reputation
-  let token:      ReputationToken
+  let token:      ParticipationToken
 
   beforeEach(async () => {
     ;[deployer, caller, callee, arbitrator, stranger] = await ethers.getSigners()
-    //;({ registry, escrow, reputation, token } = await deployAll(deployer, arbitrator))
     const result = await deployAll(deployer, arbitrator);
     registry = result.registry as unknown as SessionRegistry;
     escrow = result.escrow as unknown as Escrow;
     reputation = result.reputation as unknown as Reputation;
-    token = result.token as unknown as ReputationToken;
+    token = result.token as unknown as ParticipationToken;
   })
 
   // *** Deployment ***
@@ -87,6 +89,10 @@ describe('SessionRegistry', () => {
 
     it('wires reputation address correctly', async () => {
       expect(await registry.reputation()).to.equal(await reputation.getAddress())
+    })
+
+    it('wires participationToken address correctly', async () => {
+      expect(await registry.participationToken()).to.equal(await token.getAddress())
     })
 
     it('sets arbitrator', async () => {
@@ -103,7 +109,7 @@ describe('SessionRegistry', () => {
   describe('createSession', () => {
     it('creates a session and emits SessionCreated', async () => {
       await expect(
-        registry.connect(caller).createSession(callee.address, THIRTY_MIN, ONE_DAY, {
+        registry.connect(caller).createSession(callee.address, THIRTY_MIN, ONE_DAY, { 
           value: ONE_ETH,
         })
       )
@@ -153,32 +159,56 @@ describe('SessionRegistry', () => {
       await registry.connect(caller).createSession(callee.address, THIRTY_MIN, ONE_DAY, { value: ONE_ETH })
     })
 
-    it('transitions to Active and emits SessionConfirmed', async () => {
-      await expect(registry.connect(callee).confirmSession(0n))
+    it('transitions to Active, stores scheduledStart, emits SessionConfirmed', async () => {
+      const startAt = (await time.latest()) + 3600 // 1 hour from now
+
+      await expect(registry.connect(callee).confirmSession(0n, startAt))
         .to.emit(registry, 'SessionConfirmed')
-        .withArgs(0n, callee.address)
+        .withArgs(0n, callee.address, startAt)
 
       const s = await registry.getSession(0n)
       expect(s.status).to.equal(2) // Status.Active
+      expect(s.scheduledStart).to.equal(startAt)
+    })
+
+    it('allows scheduledStart equal to now', async () => {
+      await expect(confirmNow(registry, callee, 0n)).to.not.be.reverted
+    })
+
+    it('reverts if scheduledStart is in the past', async () => {
+      const past = (await time.latest()) - 1
+      await expect(registry.connect(callee).confirmSession(0n, past)
+      ).to.be.revertedWithCustomError(registry, 'ScheduledStartInPast')
+    })
+
+    it('reverts if scheduledStart is beyond the confirm-timeout deadline', async () => {
+      const session = await registry.getSession(0n)
+      const tooLate = Number(session.createdAt) + ONE_DAY + 1
+      await expect(
+        registry.connect(callee).confirmSession(0n, tooLate)
+      ).to.be.revertedWithCustomError(registry, 'ScheduledStartAfterConfirmTimeout')
     })
 
     it('reverts if called by a non-callee', async () => {
+      const now = await time.latest()
       await expect(
-        registry.connect(stranger).confirmSession(0n)
+        registry.connect(stranger).confirmSession(0n, now)
       ).to.be.revertedWithCustomError(registry, 'NotCallee')
     })
 
     it('reverts if confirm timeout has passed', async () => {
       await time.increase(ONE_DAY + 1)
+      const now = await time.latest()
       await expect(
-        registry.connect(callee).confirmSession(0n)
+        registry.connect(callee).confirmSession(0n, now)
       ).to.be.revertedWithCustomError(registry, 'ConfirmTimeoutExpired')
     })
 
     it('reverts if session is not in Escrowed state', async () => {
-      await registry.connect(callee).confirmSession(0n)
+      await confirmNow(registry, callee, 0n)
+      const now = await time.latest()
       await expect(
-        registry.connect(callee).confirmSession(0n)
+        registry.connect(callee).confirmSession(0n, now)
       ).to.be.revertedWithCustomError(registry, 'WrongStatus')
     })
   })
@@ -188,10 +218,13 @@ describe('SessionRegistry', () => {
   describe('completeSession', () => {
     beforeEach(async () => {
       await registry.connect(caller).createSession(callee.address, THIRTY_MIN, ONE_DAY, { value: ONE_ETH })
-      await registry.connect(callee).confirmSession(0n)
     })
 
-    it('caller can complete and escrow releases to callee', async () => {
+    it('caller can complete immediately, even before scheduledStart + duration', async () => {
+      const startAt = (await time.latest()) + 3600
+      await registry.connect(callee).confirmSession(0n, startAt)
+
+      // No time has passed — this is exactly the "caller cancels early" case.
       const balanceBefore = await ethers.provider.getBalance(callee.address)
 
       await expect(registry.connect(caller).completeSession(0n))
@@ -204,21 +237,69 @@ describe('SessionRegistry', () => {
       expect(balanceAfter - balanceBefore).to.equal(ONE_ETH)
     })
 
-    it('callee can also complete', async () => {
+    it('callee CANNOT complete before scheduledStart + durationSecs has elapsed', async () => {
+      await confirmNow(registry, callee, 0n)
+
+      // Immediately after confirming — nowhere near completable.
+      await expect(registry.connect(callee).completeSession(0n)
+      ).to.be.revertedWithCustomError(registry, 'SessionNotYetElapsed')
+    })
+
+    it('callee CAN complete once scheduledStart + durationSecs has elapsed', async () => {
+      await confirmNow(registry, callee, 0n)
+ 
+      // Read back what actually got stored rather than re-deriving it.
+      const { scheduledStart } = await registry.getSession(0n)
+ 
+      await time.increaseTo(scheduledStart + BigInt(THIRTY_MIN) + 1n)
+ 
       await expect(registry.connect(callee).completeSession(0n))
         .to.emit(registry, 'SessionCompleted')
         .withArgs(0n, callee.address)
     })
 
     it('reverts if stranger tries to complete', async () => {
+      await confirmNow(registry, callee, 0n)
       await expect(
         registry.connect(stranger).completeSession(0n)
       ).to.be.revertedWithCustomError(registry, 'NotParty')
     })
 
     it('escrow balance is zero after completion', async () => {
+      await confirmNow(registry, callee, 0n)
       await registry.connect(caller).completeSession(0n)
       expect(await escrow.balanceOf(0n)).to.equal(0n)
+    })
+
+    it('mints REWARD_AMOUNT to both caller and callee on completion', async () => {
+      await confirmNow(registry, callee, 0n)
+      await expect(registry.connect(caller).completeSession(0n))
+        .to.emit(token, 'Rewarded')
+        .withArgs(0n, caller.address, callee.address)
+
+      expect(await token.balanceOf(caller.address)).to.equal(REWARD_AMOUNT)
+      expect(await token.balanceOf(callee.address)).to.equal(REWARD_AMOUNT)
+    })
+
+    it('does not mint a reward for a disputed session resolved via arbitration', async () => {
+      await confirmNow(registry, callee, 0n)
+      await registry.connect(caller).disputeSession(0n)
+      await registry.connect(arbitrator).resolveDispute(0n, callee.address)
+
+      expect(await token.balanceOf(caller.address)).to.equal(0n)
+      expect(await token.balanceOf(callee.address)).to.equal(0n)
+    })
+
+    it('accumulates rewards correctly across multiple completed sessions', async () => {
+      await confirmNow(registry, callee, 0n)
+      await registry.connect(caller).completeSession(0n)
+
+      await registry.connect(caller).createSession(callee.address, THIRTY_MIN, ONE_DAY, { value: ONE_ETH })
+      await confirmNow(registry, callee, 1n)
+      await registry.connect(caller).completeSession(1n)
+
+      expect(await token.balanceOf(caller.address)).to.equal(REWARD_AMOUNT * 2n)
+      expect(await token.balanceOf(callee.address)).to.equal(REWARD_AMOUNT * 2n)
     })
   })
 
@@ -258,14 +339,19 @@ describe('SessionRegistry', () => {
         registry.connect(stranger).claimRefund(0n)
       ).to.be.revertedWithCustomError(registry, 'NotCaller')
     })
-  })
 
-  // *** disputeSession + resolveDispute ***
+    it('does not mint a participation reward on refund', async () => {
+      await time.increase(ONE_DAY + 1)
+      await registry.connect(caller).claimRefund(0n)
+      expect(await token.balanceOf(caller.address)).to.equal(0n)
+      expect(await token.balanceOf(callee.address)).to.equal(0n)
+    })
+  })
 
   describe('disputeSession and resolveDispute', () => {
     beforeEach(async () => {
       await registry.connect(caller).createSession(callee.address, THIRTY_MIN, ONE_DAY, { value: ONE_ETH })
-      await registry.connect(callee).confirmSession(0n)
+      await confirmNow(registry, callee, 0n)
     })
 
     it('caller can open a dispute', async () => {
@@ -316,7 +402,7 @@ describe('SessionRegistry', () => {
   describe('rateCounterparty', () => {
     beforeEach(async () => {
       await registry.connect(caller).createSession(callee.address, THIRTY_MIN, ONE_DAY, { value: ONE_ETH })
-      await registry.connect(callee).confirmSession(0n)
+      await confirmNow(registry, callee, 0n)
       await registry.connect(caller).completeSession(0n)
     })
 

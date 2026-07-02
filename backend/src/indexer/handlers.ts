@@ -2,10 +2,9 @@
  * One handler per SessionRegistry event type. Each handler:
  *   1. Upserts the relevant row(s) into Postgres
  *   2. Pushes a real-time notification via Socket.io (see signaling/socket.ts)
- *
- * Handlers are idempotent — re-processing the same event (e.g. after a
- * restart that re-scans a few blocks for safety) should not create duplicates
- * or corrupt state. We rely on PRIMARY KEY / UNIQUE constraints + upserts.
+ * 
+ * Handlers are safe to retry — re‑processing the same event (e.g., after a restart that re‑scans a few 
+ * blocks) won't create duplicates or corrupt the state. We handle this with unique constraints and upserts.
  */
 
 import { ethers } from 'ethers'
@@ -71,16 +70,17 @@ export async function handleSessionCreated(event: ethers.EventLog) {
 // *** SessionConfirmed ***
 
 export async function handleSessionConfirmed(event: ethers.EventLog) {
-  const [sessionId, callee] = event.args
+  const [sessionId, callee, scheduledStart] = event.args
   const confirmedAt = await blockTimestamp(event.blockNumber)
+  const scheduledStartDate = new Date(Number(scheduledStart) * 1000)
 
   const result = await pool.query(
     `UPDATE sessions
-       SET status = 'Active', confirmed_at_chain = $1,
-           last_event_tx_hash = $2, last_block_number = $3
-     WHERE session_id = $4
+       SET status = 'Active', confirmed_at_chain = $1, scheduled_start_at = $2,
+           last_event_tx_hash = $3, last_block_number = $4
+     WHERE session_id = $5
      RETURNING caller_address, callee_address`,
-    [confirmedAt, event.transactionHash, event.blockNumber, sessionId.toString()]
+    [confirmedAt, scheduledStartDate, event.transactionHash, event.blockNumber, sessionId.toString()]
   )
 
   if (result.rows.length === 0) {
@@ -90,14 +90,11 @@ export async function handleSessionConfirmed(event: ethers.EventLog) {
 
   const { caller_address, callee_address } = result.rows[0]
   notifySessionEvent({
-    sessionId: sessionId.toString(),
-    type: 'SessionConfirmed',
-    caller: caller_address,
-    callee: callee_address,
-    txHash: event.transactionHash,
+    sessionId: sessionId.toString(), type: 'SessionConfirmed',
+    caller: caller_address, callee: callee_address, txHash: event.transactionHash,
   })
 
-  console.log(`[indexer] SessionConfirmed #${sessionId}`)
+  console.log(`[indexer] SessionConfirmed #${sessionId}, scheduled start ${scheduledStartDate.toISOString()}`)
 }
 
 // *** SessionCompleted ***

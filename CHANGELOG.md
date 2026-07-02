@@ -1,5 +1,14 @@
 # Changelog
 
+## ParticipationToken wired in, completion-timing fix, 
+
+- Renamed `ReputationToken.sol` to `ParticipationToken.sol` (avoid confusion with the unrelated `Reputation.sol`), added it as a fourth
+constructor argument to `SessionRegistry`, and `completeSession()` now mints the reward to both parties on clean completion only — not on
+`resolveDispute()`'s payout, since a disputed session didn't conclude cleanly. This meant a full four-contract redeploy (Escrow and Reputation's `registry` address is immutable, set once at construction, so they had to be redeployed alongside the registry rather than just adding one new contract on the side).
+
+- **Found and fixed a real trust-model gap while testing.** The callee could `confirmSession()` and `completeSession()` back to back and drain escrow without ever delivering anything — there was no check that any time had actually passed. Fixed by having the callee declare `scheduledStart` at confirmation time (bounded between now and the original confirm-timeout deadline); the callee can only complete once `scheduledStart + durationSecs` has elapsed (This is documented in the [Design.md](./DESIGN.md)).
+
+- Added `useSocket.ts` on the frontend, registers the connected wallet's room and exposes the live event stream; `useDashboard.ts` does a quiet background refetch whenever a push event touches the connected address. `SessionPage.tsx` deliberately keeps its own direct-from-chain polling unchanged — it needs to be authoritative immediately after the user's own transaction without depending on indexer or socket timing.
 
 ## Frontend Rating and dashboard
 

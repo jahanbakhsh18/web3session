@@ -2,11 +2,11 @@
   "network": "sepolia",
   "chainId": "11155111",
   "deployer": "0x6019cBC908cf061fC2Aadf8e81824ABD73eB9115",
-  "timestamp": "2026-06-15T14:30:38.353Z",
+  "timestamp": "2026-06-29T09:59:13.831Z",
   "contracts": {
-    "Escrow": "0x804167221A82e80C2b73Ed394a9540E1Fbab0004",
-    "Reputation": "0x58eA41b0fCf4dec1f19AD386FDFdB56E9F29Ee6e",
-    "SessionRegistry": "0x526A3D4e6BCCcCb4fE97E73053f7B4c36724f4eb",
-    "ReputationToken": "0x9f07800F7a2d0A2FfF1b314EEcfdec4a64fE858C"
+    "Escrow": "0xe8c4B36026Ff5168DaDe4529f9efDD8bf49BdC29",
+    "Reputation": "0x04C05b90D619416198b6965E0491fe702d19c3AE",
+    "ParticipationToken": "0xf4328E6b125Bcc9B339C73166E06A53A57A363B6",
+    "SessionRegistry": "0x446bbd951525F223024DfabB69EBA35346dfa166"
   }
 }

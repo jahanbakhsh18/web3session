@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  /* Reset and full-screen setup */
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #0d1117;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  
+  .slideshow-container {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    background: #0d1117;
+  }
+  
+  /* Image area - fills entire screen */
+  .image-area {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background: #0d1117;
+    cursor: zoom-in;
+  }
+  
+  .slide {
+    display: none;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  
+  .slide.active {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  
+  /* Top bar - floating overlay */
+  .top-bar {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 10px 20px;
+    background: rgba(13, 17, 23, 0.85);
+    backdrop-filter: blur(12px);
+    border-radius: 12px;
+    border: 1px solid rgba(48, 54, 61, 0.5);
+    box-shadow: 0 4px 32px rgba(0,0,0,0.6);
+    min-height: 52px;
+    flex-wrap: wrap;
+    justify-content: center;
+    z-index: 100;
+    max-width: 90vw;
+  }
+  
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  
+  .controls button {
+    background: rgba(255,255,255,0.06);
+    color: #f0f6fc;
+    border: 1px solid rgba(48, 54, 61, 0.5);
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+    font-family: inherit;
+    white-space: nowrap;
+    min-width: 32px;
+  }
+  
+  .controls button:hover {
+    background: rgba(255,255,255,0.12);
+    border-color: #58a6ff;
+  }
+  
+  .controls button#playBtn {
+    min-width: 36px;
+  }
+  
+  /* Dots */
+  .dots {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  
+  .dot {
+    width: 9px;
+    height: 9px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: none;
+    padding: 0;
+  }
+  
+  .dot.active {
+    background: #58a6ff;
+    transform: scale(1.4);
+    box-shadow: 0 0 12px rgba(88, 166, 255, 0.3);
+  }
+  
+  .dot:hover {
+    background: rgba(255,255,255,0.4);
+  }
+  
+  .dot.active:hover {
+    background: #58a6ff;
+  }
+  
+  /* Info */
+  .slide-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #f0f6fc;
+    font-size: 13px;
+  }
+  
+  .slide-number {
+    color: #8b949e;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  
+  .divider {
+    color: #30363d;
+    user-select: none;
+  }
+  
+  .slide-title {
+    color: #f0f6fc;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  
+  .slide-description {
+    color: #8b949e;
+    white-space: nowrap;
+  }
+  
+  /* Zoom overlay */
+  .zoom-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.95);
+    z-index: 9999;
+    cursor: zoom-out;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  
+  .zoom-overlay.active {
+    display: flex;
+  }
+  
+  .zoom-overlay img {
+    max-width: 95%;
+    max-height: 95%;
+    object-fit: contain;
+    box-shadow: 0 8px 64px rgba(0,0,0,0.9);
+    user-select: none;
+  }
+  
+  /* Keyboard hint (hidden on mobile) */
+  .hint {
+    position: absolute;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,0.1);
+    font-size: 11px;
+    z-index: 50;
+    pointer-events: none;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+  }
+  
+  /* Responsive */
+  @media (max-width: 900px) {
+    .top-bar {
+      bottom: 20px;
+      padding: 8px 14px;
+      gap: 12px;
+      min-height: 44px;
+      border-radius: 10px;
+    }
+    
+    .controls button {
+      padding: 4px 10px;
+      font-size: 12px;
+      min-width: 28px;
+    }
+    
+    .slide-info {
+      font-size: 12px;
+      gap: 6px;
+    }
+    
+    .slide-description {
+      display: none; /* Hide description on smaller screens */
+    }
+    
+    .divider.hide-mobile {
+      display: none;
+    }
+  }
+  
+  @media (max-width: 600px) {
+    .top-bar {
+      bottom: 16px;
+      padding: 6px 12px;
+      gap: 8px;
+      min-height: 38px;
+      border-radius: 8px;
+      max-width: 95vw;
+    }
+    
+    .controls button {
+      padding: 3px 8px;
+      font-size: 11px;
+      min-width: 24px;
+    }
+    
+    .dot {
+      width: 7px;
+      height: 7px;
+    }
+    
+    .slide-title {
+      font-size: 11px;
+    }
+    
+    .slide-number {
+      font-size: 10px;
+    }
+    
+    .hint {
+      display: none;
+    }
+  }
+  
+  @media (max-width: 400px) {
+    .top-bar {
+      gap: 5px;
+      padding: 4px 8px;
+    }
+    
+    .controls button {
+      padding: 2px 6px;
+      font-size: 10px;
+    }
+    
+    .slide-number {
+      display: none;
+    }
+    
+    .slide-title {
+      font-size: 10px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="slideshow-container">
+  <div class="image-area" id="imageArea">
+    <div class="slide active">
+      <img src="screenshots/1_dashboard_and_terminals.png" alt="Dashboard & Terminals">
+    </div>
+    <div class="slide">
+      <img src="screenshots/2_new_booking.png" alt="New Booking">
+    </div>
+    <div class="slide">
+      <img src="screenshots/3_confirm_session.png" alt="Confirm Session">
+    </div>
+    <div class="slide">
+      <img src="screenshots/4_mark_complete.png" alt="Mark Complete">
+    </div>
+    <div class="slide">
+      <img src="screenshots/5_rate_callee.png" alt="Rate Callee">
+    </div>
+    <div class="slide">
+      <img src="screenshots/6_rate_caller.png" alt="Rate Caller">
+    </div>
+  </div>
+
+  <div class="hint">← → or Space to navigate · Click to zoom</div>
+
+  <div class="top-bar">
+    <!-- Controls -->
+    <div class="controls">
+      <button onclick="prevSlide()" title="Previous (←)">◀</button>
+      <button onclick="toggleAutoPlay()" id="playBtn" title="Play/Pause (Space)">⏸</button>
+      <button onclick="nextSlide()" title="Next (→)">▶</button>
+    </div>
+
+    <!-- Dots -->
+    <div class="dots">
+      <span class="dot active" onclick="currentSlide(0)"></span>
+      <span class="dot" onclick="currentSlide(1)"></span>
+      <span class="dot" onclick="currentSlide(2)"></span>
+      <span class="dot" onclick="currentSlide(3)"></span>
+      <span class="dot" onclick="currentSlide(4)"></span>
+      <span class="dot" onclick="currentSlide(5)"></span>
+    </div>
+
+    <!-- Info -->
+    <div class="slide-info">
+      <span class="slide-number" id="slideNumber">1/6</span>
+      <span class="divider">·</span>
+      <span class="slide-title" id="slideTitle">Dashboard</span>
+      <span class="divider hide-mobile">·</span>
+      <span class="slide-description" id="slideDescription">Overview with backend & frontend terminals</span>
+    </div>
+  </div>
+</div>
+
+<!-- Zoom Overlay -->
+<div class="zoom-overlay" id="zoomOverlay" onclick="closeZoom()">
+  <img id="zoomImage" src="" alt="Zoomed screenshot">
+</div>
+
+<script>
+let currentIndex = 0;
+let slides = document.querySelectorAll('.slide');
+let dots = document.querySelectorAll('.dot');
+let autoPlayInterval = null;
+let isAutoPlaying = true;
+
+const slideData = [
+  { title: 'Dashboard', description: 'Overview with backend & frontend terminals' },
+  { title: 'New Booking', description: 'Alice initiates a new booking session' },
+  { title: 'Confirm Session', description: 'Bob confirms and sets the schedule' },
+  { title: 'Mark Complete', description: 'Alice marks the session as completed' },
+  { title: 'Rate Callee', description: 'Alice rates Bob — 1 to 5 stars' },
+  { title: 'Rate Caller', description: 'Bob rates Alice — 1 to 5 stars' }
+];
+
+function showSlide(index) {
+  slides.forEach(s => s.classList.remove('active'));
+  dots.forEach(d => d.classList.remove('active'));
+  
+  slides[index].classList.add('active');
+  dots[index].classList.add('active');
+  
+  document.getElementById('slideNumber').textContent = `${index + 1}/${slides.length}`;
+  document.getElementById('slideTitle').textContent = slideData[index].title;
+  document.getElementById('slideDescription').textContent = slideData[index].description;
+  
+  currentIndex = index;
+}
+
+function nextSlide() {
+  let newIndex = (currentIndex + 1) % slides.length;
+  showSlide(newIndex);
+}
+
+function prevSlide() {
+  let newIndex = (currentIndex - 1 + slides.length) % slides.length;
+  showSlide(newIndex);
+}
+
+function currentSlide(index) {
+  showSlide(index);
+  // Reset auto-play timer when manually navigating
+  if (isAutoPlaying) {
+    clearInterval(autoPlayInterval);
+    startAutoPlay();
+  }
+}
+
+function toggleAutoPlay() {
+  if (isAutoPlaying) {
+    clearInterval(autoPlayInterval);
+    autoPlayInterval = null;
+    document.getElementById('playBtn').textContent = '▶';
+  } else {
+    startAutoPlay();
+    document.getElementById('playBtn').textContent = '⏸';
+  }
+  isAutoPlaying = !isAutoPlaying;
+}
+
+function startAutoPlay() {
+  autoPlayInterval = setInterval(nextSlide, 10000);
+}
+
+startAutoPlay();
+
+// Keyboard controls
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight') { e.preventDefault(); nextSlide(); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+  if (e.key === ' ') {
+    e.preventDefault();
+    toggleAutoPlay();
+  }
+  if (e.key === 'Escape') {
+    closeZoom();
+  }
+});
+
+// Zoom functionality
+const imageArea = document.getElementById('imageArea');
+const zoomOverlay = document.getElementById('zoomOverlay');
+const zoomImage = document.getElementById('zoomImage');
+
+imageArea.addEventListener('click', function(e) {
+  const activeSlide = document.querySelector('.slide.active');
+  if (activeSlide) {
+    const img = activeSlide.querySelector('img');
+    if (img) {
+      zoomImage.src = img.src;
+      zoomOverlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+  }
+});
+
+function closeZoom() {
+  zoomOverlay.classList.remove('active');
+  document.body.style.overflow = '';
+}
+</script>
+
+</body>
+</html>
