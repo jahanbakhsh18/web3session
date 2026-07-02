@@ -31,7 +31,7 @@ All four contracts are verified (click any address above to read the source dire
 
 ## Contract state machine
 
-<p> <img src="docs/web3session.png" width="640" /> </p>
+<p> <img src="docs/web3session.png" width="680" /> </p>
 
 `SessionRegistry.sol` owns the lifecycle. `Escrow.sol` is a standalone vault that only the registry can move funds through. `Reputation.sol` stores a cumulative `(total, count)` score per address so the average can be computed precisely off-chain. `ParticipationToken.sol` is a non-transferable ERC-20 minted to both parties on a clean completion (a proof-of-participation reward, not a currency).
 
@@ -44,16 +44,16 @@ All four contracts are verified (click any address above to read the source dire
 ### Design considerations and screenshots
 
 <div align="center">
-  <div style="display: flex; justify-content: center; gap: 100px; flex-wrap: wrap;">
+  <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
     <div style="text-align: center;">
       <h4><a href="./DESIGN.md">📐 Design Considerations</a></h4>
       <p><em>Click to view design rationale</em></p>
     </div>
     <div style="text-align: center;">
-      <a href="https://jahanbakhsh18.github.io/web3session/docs/screenshots.html">
+      <a href="https://jahanbakhsh18.github.io/web3session/">
         <img src="docs/screenshots/1_dashboard_and_terminals.png" width="200" alt="Application Demo">
       </a>
-      <p><em><a href="https://jahanbakhsh18.github.io/web3session/docs/screenshots.html">📸 Application screenshots</a></em></p>
+      <p><em><a href="https://jahanbakhsh18.github.io/web3session/">📸 Application screenshots</a></em></p>
     </div>
   </div>
 </div>
