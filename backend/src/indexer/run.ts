@@ -149,7 +149,7 @@ async function startPollingListener() {
       if (consecutiveFailures >= 5) {
         console.warn(
           `[indexer] ${consecutiveFailures} consecutive failures — ` +
-          `check SEPOLIA_RPC_URL in .env. Is the RPC provider correct and reachable?`
+          `check RPC_URL in .env. Is the RPC provider correct and reachable?`
         )
       }
 

@@ -54,9 +54,11 @@ async function main() {
   console.log(`Tx sent: ${tx.hash}`)
   console.log('Waiting for confirmation...')
 
+  const block_explorer = process.env.BLOCK_EXPLORER_URL ?? '<BLOCK_EXPLORER_URL>'
+
   const receipt = await tx.wait()
   console.log(`✓ Confirmed in block ${receipt?.blockNumber}`)
-  console.log(`  https://sepolia.etherscan.io/tx/${tx.hash}`)
+  console.log(`  ${block_explorer}/tx/${tx.hash}`)
   console.log(`\n${ethers.formatEther(session.deposit)} ETH released to ${winnerRole} (${winnerAddress}).`)
 }
 

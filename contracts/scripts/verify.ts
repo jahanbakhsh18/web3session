@@ -1,5 +1,5 @@
 /**
- * Verifies all deployed contracts on Etherscan using addresses from deployments.json.
+ * Verifies all deployed contracts on the block explorer using addresses from deployments.json.
  * Run after deploy.ts on Sepolia:
  *   npx hardhat run scripts/verify.ts --network sepolia
  */
@@ -18,7 +18,7 @@ async function main() {
   const d = JSON.parse(fs.readFileSync(deploymentsPath, 'utf8'))
   const { contracts, deployer } = d
 
-  console.log('\n─── Etherscan verification ────────────────────────────')
+  console.log('\n─── The block explorer verification ────────────────────────────')
 
   await verify('Escrow', contracts.Escrow, [contracts.SessionRegistry])
   await verify('Reputation', contracts.Reputation, [contracts.SessionRegistry])

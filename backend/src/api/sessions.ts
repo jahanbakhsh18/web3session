@@ -6,7 +6,7 @@ export const sessionsRouter = Router()
 /**
  * GET /api/sessions/:address
  * Returns all sessions where :address was caller or callee, newest first. This is a READ MIRROR of on-chain state.
- * The frontend should treat the tx hashes in the response as the source of truth and link to Etherscan.
+ * The frontend should treat the tx hashes in the response as the source of truth and link to the block explorer.
  */
 sessionsRouter.get('/sessions/:address', async (req, res) => {
   const address = req.params.address.toLowerCase()

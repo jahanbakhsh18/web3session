@@ -6,6 +6,7 @@ import { Dashboard } from './components/Dashboard'
 import { Modal } from './components/Modal'
 import { useWallet } from './hooks/useWallet'
 import './styles/index.css'
+import { CURRENCY_NAME, CHAIN_NAME } from './config/contracts'
 
 type Overlay = { type: 'book' } | { type: 'session'; sessionId: string } | null
 
@@ -29,7 +30,7 @@ export default function App() {
           <div>
             <h1 className="app-title">web3session</h1>
             <div className="eyebrow app-tagline">
-              On-chain consultation escrow — Sepolia testnet
+              On-chain consultation escrow — <span className='seal'> {CURRENCY_NAME} TESTNET </ span>
             </div>
           </div>
           <ConnectWallet wallet={wallet} />
@@ -71,7 +72,7 @@ export default function App() {
           </>
         ) : (
           <p className="intro-copy">
-            Connect your wallet on Sepolia to book a consultation session.
+            Connect your wallet on { CHAIN_NAME } to book a consultation session.
             Funds are held in an on-chain escrow contract and released only
             when both the lifecycle and the timing allow it.
           </p>

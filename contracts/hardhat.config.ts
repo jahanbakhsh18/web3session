@@ -13,8 +13,8 @@ function requireEnv(key: string, fallback?: string): string {
 }
 
 const PRIVATE_KEY    = process.env.PRIVATE_KEY    ?? '0x' + '0'.repeat(64)  // dummy for local
-const INFURA_URL     = process.env.INFURA_URL     ?? ''
-const ETHERSCAN_KEY  = process.env.ETHERSCAN_API_KEY ?? ''
+const RPC_URL     = process.env.RPC_URL     ?? ''
+const BLOCK_EXPLORER_API_KEY  = process.env.BLOCK_EXPLORER_API_KEY ?? ''
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -42,16 +42,22 @@ const config: HardhatUserConfig = {
 
     // Sepolia testnet
     sepolia: {
-      url: INFURA_URL, // || `https://sepolia.infura.io/v3/YOUR_KEY`,
+      url: RPC_URL,
       accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
       //timeout: 60000,
       chainId: 11155111,
       gasPrice: 'auto',
     },
+    bscTestnet: {
+      url: "https://data-seed-prebsc-1-s1.binance.org:8545/", // Public RPC
+      accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
+      chainId: 97, // BSC Testnet Chain ID
+      gasPrice: 20000000000, // 20 gwei (optional, for faster tx)
+    },
   },
 
   etherscan: {
-    apiKey: ETHERSCAN_KEY
+    apiKey: BLOCK_EXPLORER_API_KEY
   },
 
   gasReporter: {

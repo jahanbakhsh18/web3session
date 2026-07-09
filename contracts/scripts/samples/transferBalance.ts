@@ -55,8 +55,10 @@ async function main() {
 
   await tx.wait();
 
+  const block_explorer = process.env.BLOCK_EXPLORER_URL ?? '<BLOCK_EXPLORER_URL>'
+
   console.log(` ✅ Successfully transferred ${ethers.formatEther(amountToSend)} ETH!`);
-  console.log(` View transaction: https://sepolia.etherscan.io/tx/${tx.hash}`);
+  console.log(` View transaction: ${block_explorer}/tx/${tx.hash}`);
 }
 
 main().catch((error) => {

@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { ethers } from 'ethers'
 import { useSession } from '../hooks/useSession'
+import { BLOCK_EXPLORER_URL, CURRENCY_SYMBOL } from '../config/contracts'
 
 type Props = {
   signer: ethers.JsonRpcSigner | null
   onCreated?: (sessionId: string) => void
 }
-
-const ETHERSCAN_TX_BASE = 'https://sepolia.etherscan.io/tx/'
 
 export function BookSession({ signer, onCreated }: Props) {
   const { createSession, createState } = useSession(signer)
@@ -69,7 +68,7 @@ export function BookSession({ signer, onCreated }: Props) {
           </label>
 
           <label className="field-label flex-1">
-            Deposit (ETH)
+            Deposit ({CURRENCY_SYMBOL})
             <input
               type="text"
               inputMode="decimal"
@@ -100,14 +99,14 @@ export function BookSession({ signer, onCreated }: Props) {
           {createState.status === 'pending' && 'Opening wallet…'}
           {createState.status === 'confirming' && 'Waiting for confirmation…'}
           {(createState.status === 'idle' || createState.status === 'success' || createState.status === 'error') &&
-            `Deposit ${depositEth} ETH and book`}
+            `Deposit ${depositEth} ${CURRENCY_SYMBOL} and book`}
         </button>
 
         {createState.status === 'confirming' && createState.txHash && (
           <p className="note note-muted mono">
             Transaction sent —{' '}
-            <a href={`${ETHERSCAN_TX_BASE}${createState.txHash}`} target="_blank" rel="noreferrer">
-              view on Etherscan
+            <a href={`${BLOCK_EXPLORER_URL}/tx/${createState.txHash}`} target="_blank" rel="noreferrer">
+              View on the blockchain explorer
             </a>
           </p>
         )}
@@ -120,8 +119,8 @@ export function BookSession({ signer, onCreated }: Props) {
           <div className="note-callout note-success">
             <strong>Session #{result.sessionId} created.</strong>
             <br />
-            <a href={`${ETHERSCAN_TX_BASE}${result.txHash}`} target="_blank" rel="noreferrer">
-              View transaction on Etherscan
+            <a href={`${BLOCK_EXPLORER_URL}/tx/${result.txHash}`} target="_blank" rel="noreferrer">
+              View transaction on the blockchain explorer
             </a>
           </div>
         )}

@@ -1,4 +1,5 @@
 import type { useWallet } from '../hooks/useWallet'
+import { CHAIN_NAME } from '../config/contracts'
 
 function shortenAddress(address: string): string {
   return `${address.slice(0, 7)}…${address.slice(-5)}`
@@ -9,7 +10,7 @@ type Props = {
 }
 
 export function ConnectWallet({ wallet }: Props) {
-  const { address, isCorrectNetwork, isConnecting, error, connect, disconnect, switchToSepolia } = wallet
+  const { address, isCorrectNetwork, isConnecting, error, connect, disconnect, switchToSelectedChain } = wallet
 
   if (address && isCorrectNetwork) {
     return (
@@ -27,7 +28,7 @@ export function ConnectWallet({ wallet }: Props) {
     return (
       <div className="row row-gap-md">
         <span className="eyebrow note-pending">Wrong network</span>
-        <button onClick={switchToSepolia}>Switch to Sepolia</button>
+        <button onClick={switchToSelectedChain}>Switch to {CHAIN_NAME}</button>
       </div>
     )
   }

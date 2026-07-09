@@ -1,7 +1,7 @@
 /**
  * Manually triggers a SessionCreated event on Sepolia so you can verify the backend indexer picks it up. 
  * Run from contracts/: 
- *  $ npx hardhat run scripts/samples/createSession.ts --network sepolia
+ *  $ npx hardhat run scripts/samples/createSession.ts --network <sepolia or bscTestnet>
  *
  * Uses your test CALLER_KEY or deployer PRIVATE_KEY for the caller. For the callee use CALLEE_ADDRESS 
  * or the hardcoded test address below. Set CALLEE_ADDRESS if you want to test confirm() and complete() too.
@@ -36,9 +36,11 @@ async function main() {
   console.log(`Tx sent: ${tx.hash}`)
   console.log('Waiting for confirmation...')
 
+  const block_explorer = process.env.BLOCK_EXPLORER_URL ?? '<BLOCK_EXPLORER_URL>'
+
   const receipt = await tx.wait()
   console.log(`✓ Confirmed in block ${receipt?.blockNumber}`)
-  console.log(`  https://sepolia.etherscan.io/tx/${tx.hash}`)
+  console.log(`  ${block_explorer}/tx/${tx.hash}`)
   console.log('\nYour backend indexer should pick this up on its next poll.')
 }
 

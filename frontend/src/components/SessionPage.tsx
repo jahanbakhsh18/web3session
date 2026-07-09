@@ -5,6 +5,7 @@ import { useSession } from '../hooks/useSession'
 import { Countdown } from './Countdown'
 import { StarRating } from './StarRating'
 import { Stamp } from './Stamp'
+import { BLOCK_EXPLORER_URL, CURRENCY_SYMBOL } from '../config/contracts'
 
 type Props = {
   sessionId: string
@@ -12,8 +13,6 @@ type Props = {
   provider: ethers.Provider | null
   connectedAddress: string | null
 }
-
-const ETHERSCAN_TX_BASE = 'https://sepolia.etherscan.io/tx/'
 
 function isSameAddress(a: string | null, b: string | null): boolean {
   if (!a || !b) return false
@@ -93,7 +92,7 @@ export function SessionPage({ sessionId, signer, provider, connectedAddress }: P
           <dt className="note-muted">Callee</dt>
           <dd className="mono">{shorten(data.callee)}</dd>
           <dt className="note-muted">Deposit</dt>
-          <dd className="mono">{ethers.formatEther(data.deposit)} ETH</dd>
+          <dd className="mono">{ethers.formatEther(data.deposit)} {CURRENCY_SYMBOL}</dd>
           <dt className="note-muted">Duration</dt>
           <dd className="mono">{Math.round(data.durationSecs / 60)} min</dd>
           {data.status !== 'Escrowed' && data.scheduledStart > 0 && (
@@ -235,8 +234,8 @@ export function SessionPage({ sessionId, signer, provider, connectedAddress }: P
         {[confirmState, completeState, disputeState, refundState, rateState].map((s, i) =>
           s.status === 'confirming' && s.txHash ? (
             <p key={i} className="note note-muted mono mt-sm">
-              <a href={`${ETHERSCAN_TX_BASE}${s.txHash}`} target="_blank" rel="noreferrer">
-                View transaction on Etherscan
+              <a href={`${BLOCK_EXPLORER_URL}/tx/${s.txHash}`} target="_blank" rel="noreferrer">
+                View transaction on blockchain explorer
               </a>
             </p>
           ) : null

@@ -9,7 +9,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { ethers } from 'ethers'
-import { CHAIN_ID, CHAIN_ID_HEX, SEPOLIA_NETWORK_PARAMS } from '../config/contracts'
+import { CHAIN_ID, CHAIN_ID_HEX, NETWORK_PARAMS } from '../config/contracts'
 
 export type WalletErrorCode =
   | 'NO_PROVIDER'      // MetaMask (or any injected wallet) not installed
@@ -119,7 +119,7 @@ export function useWallet() {
     })
   }, [])
 
-  const switchToSepolia = useCallback(async () => {
+  const switchToSelectedChain = useCallback(async () => {
     const injected = getInjectedProvider()
     if (!injected) {
       setError('NO_PROVIDER', 'No wallet found. Install MetaMask to continue.')
@@ -140,7 +140,7 @@ export function useWallet() {
         try {
           await injected.request({
             method: 'wallet_addEthereumChain',
-            params: [SEPOLIA_NETWORK_PARAMS],
+            params: [NETWORK_PARAMS],
           })
         } catch (addErr) {
           console.error('[useWallet] add chain failed:', addErr)
@@ -186,5 +186,5 @@ export function useWallet() {
     }
   }, [connect, disconnect])
 
-  return { ...state, connect, disconnect, switchToSepolia }
+  return { ...state, connect, disconnect, switchToSelectedChain }
 }

@@ -4,14 +4,13 @@ import { useDashboard } from '../hooks/useDashboard'
 import { useParticipationBalance } from '../hooks/useParticipationBalance'
 import type { SessionSummary } from '../hooks/useDashboard'
 import { StatusPill } from './StatusPill'
+import { BLOCK_EXPLORER_URL, CURRENCY_SYMBOL } from '../config/contracts'
 
 type Props = {
   address: string | null
   provider: ethers.Provider | null
   onOpenSession: (sessionId: string) => void
 }
-
-const ETHERSCAN_TX_BASE = 'https://sepolia.etherscan.io/tx/'
 
 export function Dashboard({ address, provider, onOpenSession }: Props) {
   const { sessions, reputation, loading, error, refetch, lastEvent } = useDashboard(address)
@@ -79,9 +78,11 @@ function ReputationCard({ reputation, address }: { reputation: ReturnType<typeof
     return (
       <div className="reputation-card flex-1">
         <div className="eyebrow mb-sm">Reputation</div>
-        <p className="note note-muted">
+        <span className="reputation-score"></span>
+        <span className="reputation-star"></span>
+        <span className="note note-muted">
           No on-chain ratings yet for {shortenAddress(address)}.
-        </p>
+        </span>
       </div>
     )
   }
@@ -135,14 +136,14 @@ function SessionRow({ session, myAddress, onOpen }: { session: SessionSummary; m
           {shortenAddress(counterparty)}
         </div>
         <div className="note note-muted session-row-meta">
-          {ethers.formatEther(session.deposit_wei)} ETH · {new Date(session.created_at_chain).toLocaleDateString()}
+          {ethers.formatEther(session.deposit_wei)} {CURRENCY_SYMBOL} · {new Date(session.created_at_chain).toLocaleDateString()}
         </div>
       </div>
 
       <div className="row row-gap-md">
         <StatusPill status={session.status} />
         <a
-          href={`${ETHERSCAN_TX_BASE}${session.created_tx_hash}`}
+          href={`${BLOCK_EXPLORER_URL}/tx/${session.created_tx_hash}`}
           target="_blank"
           rel="noreferrer"
           onClick={e => e.stopPropagation()}

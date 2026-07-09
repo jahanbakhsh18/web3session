@@ -13,8 +13,13 @@ function requireEnv(key: string): string {
   return value
 }
 
+export const CHAIN_NAME = requireEnv('VITE_CHAIN_NAME')
 export const CHAIN_ID = Number(requireEnv('VITE_CHAIN_ID'))
 export const CHAIN_ID_HEX = requireEnv('VITE_CHAIN_ID_HEX')
+export const CURRENCY_NAME = requireEnv('VITE_CURRENCY_NAME')
+export const CURRENCY_SYMBOL = requireEnv('VITE_CURRENCY_SYMBOL')
+export const RPC_URL = requireEnv('VITE_RPC_URL')
+export const BLOCK_EXPLORER_URL = requireEnv('VITE_BLOCK_EXPLORER_URL')
 
 export const API_URL = requireEnv('VITE_API_URL')
 
@@ -25,11 +30,11 @@ export const CONTRACT_ADDRESSES = {
   ParticipationToken: requireEnv('VITE_PARTICIPATION_TOKEN_ADDRESS'),
 } as const
 
-// Sepolia network params, used when prompting MetaMask to add/switch the network.
-export const SEPOLIA_NETWORK_PARAMS = {
+// Network params, used when prompting MetaMask to add/switch the network.
+export const NETWORK_PARAMS = {
   chainId: CHAIN_ID_HEX,
-  chainName: 'Sepolia',
-  nativeCurrency: { name: 'Sepolia ETH', symbol: 'ETH', decimals: 18 },
-  rpcUrls: ['https://rpc.sepolia.org'], // public fallback only for the "add network" prompt
-  blockExplorerUrls: ['https://sepolia.etherscan.io'],
+  chainName: CHAIN_NAME,
+  nativeCurrency: { name: CURRENCY_NAME, symbol: CURRENCY_SYMBOL, decimals: 18 },
+  rpcUrls: [RPC_URL], // public fallback only for the "add network" prompt
+  blockExplorerUrls: [BLOCK_EXPLORER_URL],
 }

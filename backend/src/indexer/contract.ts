@@ -13,10 +13,10 @@ dotenv.config()
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-const RPC_URL  = process.env.SEPOLIA_RPC_URL
+const RPC_URL  = process.env.RPC_URL
 const REGISTRY_ADDRESS = process.env.SESSION_REGISTRY_ADDRESS
 
-if (!RPC_URL) throw new Error('SEPOLIA_RPC_URL not set in backend/.env')
+if (!RPC_URL) throw new Error('RPC_URL not set in backend/.env')
 if (!REGISTRY_ADDRESS) throw new Error('SESSION_REGISTRY_ADDRESS not set in backend/.env')
 
 // ABI is synced here by the root copy-abis script — see scripts/copy-abis.js

@@ -88,7 +88,7 @@ export function useSession(signer: ethers.JsonRpcSigner | null) {
 
       const tx = await contract.createSession(calleeAddress, durationSecs, confirmTimeoutSecs, { value })
 
-      // Surface the hash immediately — the UI can link to Etherscan before the tx is even mined, which is reassuring during the wait.
+      // Surface the hash immediately — the UI can link to the explorer before the tx is even mined, which is reassuring during the wait.
       setCreateState({ status: 'confirming', txHash: tx.hash, error: null })
 
       const receipt = await tx.wait()
